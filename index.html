@@ -1,0 +1,2356 @@
+<!DOCTYPE html>
+<html lang="pl" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Baza Artykułów</title>
+<link rel="manifest" href="/VVBLACK/manifest.json">
+<meta name="theme-color" content="#6366f1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Artykuły">
+<link rel="apple-touch-icon" href="/VVBLACK/icon-192.png">
+<style>
+/* ── ZMIENNE MOTYWÓW ─────────────────────────────────────────────────── */
+:root {
+  --bg:        #0f0f13;
+  --bg2:       #17171f;
+  --bg3:       #1e1e2a;
+  --border:    #23233a;
+  --text:      #e2e8f0;
+  --text2:     #94a3b8;
+  --text3:     #64748b;
+  --text4:     #4b5563;
+  --accent:    #818cf8;
+  --accent-bg: rgba(129,140,248,.13);
+  --btn-ghost: #1e1e2a;
+  --card-bg:   #17171f;
+  --input-bg:  #1e1e2a;
+  --shadow:    0 4px 20px rgba(0,0,0,.4);
+}
+
+[data-theme="light"] {
+  --bg:        #f1f5f9;
+  --bg2:       #ffffff;
+  --bg3:       #f8fafc;
+  --border:    #e2e8f0;
+  --text:      #0f172a;
+  --text2:     #334155;
+  --text3:     #64748b;
+  --text4:     #94a3b8;
+  --accent:    #6366f1;
+  --accent-bg: rgba(99,102,241,.1);
+  --btn-ghost: #f1f5f9;
+  --card-bg:   #ffffff;
+  --input-bg:  #f8fafc;
+  --shadow:    0 4px 20px rgba(0,0,0,.08);
+}
+
+/* ── RESET ───────────────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;-webkit-text-size-adjust:100%}
+body{
+  font-family:system-ui,'Segoe UI',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  transition:background .2s, color .2s;
+}
+input,textarea,select,button{font-family:inherit}
+input:focus,textarea:focus{outline:none;border-color:var(--accent)!important;box-shadow:0 0 0 3px rgba(129,140,248,.15)}
+button{cursor:pointer}
+button:disabled{opacity:.4;cursor:not-allowed}
+a{color:var(--accent);word-break:break-all}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── NAGŁÓWEK ────────────────────────────────────────────────────────── */
+.hdr{
+  background:var(--bg2);
+  border-bottom:1px solid var(--border);
+  padding:14px 24px;
+  box-shadow:var(--shadow);
+}
+.hdr-row{display:flex;align-items:center;justify-content:space-between}
+.app-sub{font-size:11px;color:var(--text4);margin-top:2px}
+.count-num{font-size:28px;font-weight:800;color:var(--accent);line-height:1;text-align:right}
+.count-lbl{font-size:10px;color:var(--text4);text-transform:uppercase;letter-spacing:.5px}
+
+/* ── ZAKŁADKI ────────────────────────────────────────────────────────── */
+.tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border)}
+.tab{
+  flex:1;padding:13px 0;border:none;background:transparent;
+  color:var(--text3);font-size:14px;font-weight:500;
+  border-bottom:2px solid transparent;cursor:pointer;
+  transition:color .15s;
+}
+.tab.on{color:var(--accent);font-weight:700;border-bottom-color:var(--accent)}
+.tab:hover{color:var(--text)}
+
+/* ── PASEK NARZĘDZI ──────────────────────────────────────────────────── */
+.toolbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 24px}
+.tb-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tb-lbl{
+  font-size:11px;font-weight:700;color:var(--text4);
+  text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px;
+}
+.tb-row{display:flex;flex-direction:column;gap:6px}
+
+/* ── GŁÓWNY UKŁAD ────────────────────────────────────────────────────── */
+.main{padding:20px 24px 80px}
+.pg{display:none}.pg.on{display:block}
+
+/* Dwukolumnowy układ dla dużych ekranów */
+@media (min-width: 900px) {
+  .articles-layout {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  .articles-left { /* formularz + pasek narzędzi */ }
+  .articles-right { /* lista artykułów */ }
+  .main { padding: 24px 28px 40px; }
+}
+
+/* ── KARTY ───────────────────────────────────────────────────────────── */
+.card{
+  background:var(--card-bg);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:18px;
+  margin-bottom:14px;
+  box-shadow:var(--shadow);
+}
+.card-hl{border-left:3px solid var(--accent)}
+.card-exported{border-left:3px solid #34d399!important;opacity:.85}
+.card-new{border-left:3px solid #f59e0b!important}
+
+/* ── PRZYCISKI ───────────────────────────────────────────────────────── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  gap:7px;padding:10px 18px;border:none;border-radius:9px;
+  font-size:14px;font-weight:600;cursor:pointer;
+  white-space:nowrap;transition:opacity .15s, transform .1s;
+}
+.btn:active{opacity:.75;transform:scale(.97)}
+.b-purple{background:#6366f1;color:#fff}
+.b-purple:hover{background:#5558e8}
+.b-green{background:#059669;color:#fff}
+.b-ghost{
+  background:var(--btn-ghost);color:var(--text2);
+  border:1px solid var(--border);
+}
+.b-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.b-red{background:rgba(248,113,113,.1);color:#f87171;border:1px solid rgba(248,113,113,.2)}
+.b-sm{padding:7px 13px;font-size:13px;border-radius:8px}
+.b-full{width:100%;justify-content:center}
+
+/* ── POLA FORMULARZA ─────────────────────────────────────────────────── */
+.fld{margin-bottom:13px}
+.fld-2{display:grid;grid-template-columns:1fr 160px;gap:12px;margin-bottom:13px}
+.lbl{
+  display:block;font-size:12px;font-weight:700;
+  color:var(--text4);text-transform:uppercase;
+  letter-spacing:.6px;margin-bottom:5px;
+}
+input[type=text],input[type=url],input[type=date],textarea,select{
+  width:100%;padding:10px 14px;
+  background:var(--input-bg);
+  border:1px solid var(--border);
+  border-radius:9px;color:var(--text);
+  font-size:14px;line-height:1.5;
+  transition:border-color .15s, background .2s;
+}
+input[type=date]{color-scheme:dark}
+[data-theme="light"] input[type=date]{color-scheme:light}
+textarea{resize:vertical;line-height:1.65;min-height:120px}
+
+.badge{
+  background:var(--accent-bg);color:var(--accent);
+  padding:2px 8px;border-radius:5px;
+  font-size:12px;font-weight:700;font-family:monospace;
+}
+
+/* ── ARTYKUŁY ────────────────────────────────────────────────────────── */
+.art-meta{display:flex;flex-wrap:wrap;gap:8px;font-size:13px;color:var(--text3);margin:5px 0 8px}
+.art-text{color:var(--text2);font-size:14px;line-height:1.7;white-space:pre-wrap;word-break:break-word}
+.art-img{max-width:100%;border-radius:9px;margin:7px 0;display:block}
+.art-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.expand-btn{background:none;border:none;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;padding:3px 0;margin-top:5px}
+.exported-badge{
+  background:rgba(52,211,153,.12);color:#34d399;
+  border:1px solid rgba(52,211,153,.25);
+  padding:2px 9px;border-radius:5px;font-size:11px;font-weight:700;
+}
+
+/* ── EDYTOR BLOKÓW ───────────────────────────────────────────────────── */
+.blk{position:relative;margin-bottom:8px}
+.blk-rm{
+  position:absolute;top:8px;right:8px;
+  background:rgba(248,113,113,.15);border:none;
+  border-radius:5px;color:#f87171;cursor:pointer;
+  padding:3px 8px;font-size:12px;z-index:1;
+}
+.img-blk{position:relative;border:1px solid var(--border);border-radius:9px;overflow:hidden}
+.img-blk img{width:100%;max-height:280px;object-fit:contain;display:block}
+.img-rm{
+  position:absolute;top:8px;right:8px;
+  background:rgba(15,15,19,.85);border:1px solid var(--border);
+  border-radius:6px;color:#f87171;cursor:pointer;
+  padding:4px 10px;font-size:12px;font-weight:700;
+}
+.ed-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+
+/* ── SZUKAJ ──────────────────────────────────────────────────────────── */
+.srch{
+  display:flex;align-items:center;gap:9px;
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:10px;padding:9px 14px;margin-bottom:14px;
+}
+.srch input{flex:1;border:none;background:transparent;color:var(--text);font-size:14px}
+
+/* ── TOAST ───────────────────────────────────────────────────────────── */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  padding:12px 22px;border-radius:10px;font-weight:700;font-size:14px;
+  box-shadow:0 8px 28px rgba(0,0,0,.5);z-index:9999;
+  white-space:nowrap;animation:fadeUp .2s ease;pointer-events:none;
+}
+.t-ok{background:#34d399;color:#022c22}
+.t-err{background:#f87171;color:#1c0000}
+
+/* ── STATUS ──────────────────────────────────────────────────────────── */
+.s-ok{color:#34d399;font-size:13px;font-weight:600}
+.s-err{color:#f87171;font-size:13px;font-weight:600}
+
+/* ── INFO ────────────────────────────────────────────────────────────── */
+.info{
+  background:rgba(99,102,241,.07);
+  border:1px solid rgba(99,102,241,.18);
+  border-radius:10px;padding:12px 15px;
+  font-size:13px;color:var(--text3);
+  line-height:1.6;margin-bottom:14px;
+}
+
+/* ── NOTATNIK ────────────────────────────────────────────────────────── */
+.note-stats{font-size:11px;color:var(--text4);margin-top:8px}
+
+/* ── PRZYCISK MOTYWU ─────────────────────────────────────────────────── */
+#themeToggleBtn{
+  background:none;border:1px solid var(--border);
+  border-radius:8px;padding:6px 12px;
+  color:var(--text3);font-size:13px;cursor:pointer;
+  transition:all .2s;
+}
+#themeToggleBtn:hover{border-color:var(--accent);color:var(--accent)}
+</style>
+  <!-- Firebase SDK — ładowane na końcu żeby firebase-sync.js działało -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="firebase-sync.js"></script>
+</head>
+<body>
+
+<!-- Baner instalacji PWA — pojawia się na dole ekranu -->
+<div id="installBanner" style="display:none;position:fixed;bottom:0;left:0;right:0;
+  background:linear-gradient(135deg,#3730a3,#6366f1);
+  padding:14px 18px;z-index:9000;
+  box-shadow:0 -4px 24px rgba(99,102,241,.5);
+  animation:fadeUp .3s ease">
+  <div style="display:flex;align-items:center;gap:12px;max-width:600px;margin:0 auto">
+    <img src="/VVBLACK/icon-192.png" width="44" height="44"
+      style="border-radius:10px;flex-shrink:0" onerror="this.style.display='none'">
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:700;font-size:14px;color:#fff">Zainstaluj VVBlack</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.8);margin-top:1px">
+        Działa offline · Ikona na ekranie głównym
+      </div>
+    </div>
+    <button onclick="installFromBanner()"
+      style="background:#fff;color:#4f46e5;border:none;border-radius:8px;
+             padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer;
+             white-space:nowrap;flex-shrink:0">
+      Zainstaluj
+    </button>
+    <button onclick="dismissInstallBanner()"
+      style="background:none;border:none;color:rgba(255,255,255,.7);
+             cursor:pointer;font-size:20px;line-height:1;padding:4px;flex-shrink:0">
+      ✕
+    </button>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-row">
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <svg width="180" height="40" viewBox="0 0 620 140" xmlns="http://www.w3.org/2000/svg" style="display:block">
+        <defs>
+          <linearGradient id="vvGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#8a9a00"/>
+            <stop offset="55%" stop-color="#4a5000"/>
+            <stop offset="100%" stop-color="#111111"/>
+          </linearGradient>
+        </defs>
+        <path d="M14 20 Q14 20 26 85 Q28 95 36 95 Q44 95 46 85 L58 20"
+          fill="none" stroke="url(#vvGrad)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M54 20 Q54 20 66 85 Q68 95 76 95 Q84 95 86 85 L98 20"
+          fill="none" stroke="url(#vvGrad)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="114" y="95" font-family="'Helvetica Rounded','Arial Rounded MT Bold',Arial,sans-serif"
+          font-weight="800" font-size="82" id="logoBlackText" fill="#1a1a1a" letter-spacing="-1">Black</text>
+      </svg>
+      <div style="font-size:10px;color:var(--text4);letter-spacing:.3px">
+        Archiwizuj · Notuj · <span style="color:var(--accent)">v37</span>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button id="themeToggleBtn" onclick="toggleTheme()" title="Przełącz motyw">🌙 Ciemny</button>
+        <div style="text-align:right">
+          <div class="count-num" id="cNum">0</div>
+          <div class="count-lbl">artykułów</div>
+        </div>
+      </div>
+      <button class="btn b-ghost b-sm" onclick="shareApp()" style="font-size:12px">📲 Udostępnij</button>
+    </div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab on" onclick="goTab('articles')">📁 Artykuły</button>
+  <button class="tab"    onclick="goTab('notepad')">📝 Notatnik</button>
+</div>
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <div class="tb-grid">
+    <div>
+      <div class="tb-lbl">📁 Artykuły</div>
+      <div class="tb-row">
+        <button class="btn b-ghost b-sm" onclick="exportArticles()">⬇ Pobierz JSON</button>
+        <button class="btn b-ghost b-sm" onclick="q('impArt').click()">⬆ Wczytaj JSON</button>
+        <input type="file" id="impArt" accept=".json" style="display:none" onchange="importArticles(this)">
+      </div>
+    </div>
+    <div>
+      <div class="tb-lbl">📝 Notatnik</div>
+      <div class="tb-row">
+        <button class="btn b-ghost b-sm" onclick="exportNotepad()">⬇ Pobierz JSON</button>
+        <button class="btn b-ghost b-sm" onclick="q('impNote').click()">⬆ Wczytaj JSON</button>
+        <input type="file" id="impNote" accept=".json" style="display:none" onchange="importNotepad(this)">
+      </div>
+    </div>
+  </div>
+  <button class="btn b-ghost b-sm" id="autoSaveToggle" onclick="toggleAutoSave()" style="width:100%;margin-top:8px">⚪ Auto-zapis: WYŁ</button>
+  <!-- Panel synchronizacji Firebase -->
+  <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+    <div style="font-size:11px;font-weight:700;color:var(--text4);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">☁️ Synchronizacja</div>
+    <div id="fbStatus" style="margin-bottom:6px;min-height:16px"></div>
+    <div style="display:flex;gap:6px">
+      <button class="btn b-purple b-sm" id="fbPushBtn" onclick="fbSyncPush()" style="flex:1;font-size:12px">☁️ Wyślij</button>
+      <button class="btn b-ghost b-sm" id="fbPullBtn" onclick="fbSyncPull()" style="flex:1;font-size:12px">⬇️ Pobierz</button>
+    </div>
+  </div>
+  <button class="btn b-purple b-sm" id="installBtn" onclick="installApp()" style="width:100%;margin-top:8px;display:none">📲 Zainstaluj aplikację na telefonie</button>
+  <div id="installHint" style="display:none;font-size:11px;color:#4b5563;margin-top:8px;text-align:center;line-height:1.5"></div>
+
+  <div style="margin-top:10px;padding-top:10px;border-top:1px solid #23233a">
+    <div id="storageIndicator"></div>
+    <button class="btn b-ghost b-sm" id="persistBtn" onclick="requestPersistentStorage()" style="width:100%;margin-top:6px;font-size:11px">🔒 Włącz trwałe przechowywanie</button>
+    <button class="btn b-purple b-sm" id="checkUpdateBtn" onclick="forceCheckForUpdate()" style="width:100%;margin-top:6px;font-size:11px">🔄 Sprawdź aktualizacje</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- ── ARTYKUŁY ── -->
+  <div class="pg on" id="pg-articles">
+    <div class="articles-layout">
+
+      <!-- LEWA KOLUMNA: formularz + info -->
+      <div class="articles-left">
+
+        <div class="info">
+          💡 Po dodaniu kliknij <strong>Pobierz JSON</strong> — plik trafi do folderu <strong>Pobrane</strong>.
+          Przy następnej wizycie kliknij <strong>Wczytaj JSON</strong> żeby odtworzyć bazę.
+        </div>
+
+        <!-- Formularz -->
+        <div class="card" id="addForm">
+      <div style="display:flex;align-items:center;gap:9px;margin-bottom:14px">
+        <span class="badge" id="nextBadge">@1@</span>
+        <strong style="font-size:14px" id="formTitle">Dodaj wpis</strong>
+      </div>
+
+      <div style="display:flex;gap:6px;margin-bottom:14px">
+        <button class="btn b-purple b-sm" id="typeArticleBtn" onclick="setEntryType('article')" style="flex:1">📰 Artykuł</button>
+        <button class="btn b-ghost b-sm" id="typeNoteBtn" onclick="setEntryType('note')" style="flex:1">✏️ Własna notatka</button>
+      </div>
+
+      <div class="fld">
+        <label class="lbl" id="titleLbl">Tytuł</label>
+        <input type="text" id="fTitle" placeholder="Tytuł artykułu…">
+      </div>
+      <div class="fld-2">
+        <div>
+          <label class="lbl">Link główny <span style="font-weight:400;color:#374151" id="linkOptLbl"></span></label>
+          <input type="url" id="fLink" placeholder="https://… (opcjonalnie)" oninput="checkLinkDuplicateLive()">
+        </div>
+        <div>
+          <label class="lbl">Data</label>
+          <input type="date" id="fDate">
+        </div>
+      </div>
+      <div id="linkDupWarn" style="display:none;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);border-radius:8px;padding:8px 12px;font-size:12px;color:#fbbf24;margin-bottom:11px"></div>
+
+      <!-- Przycisk pobierania treści ze strony -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:11px">
+        <button class="btn b-ghost b-sm" onclick="fetchFromLink()" style="white-space:nowrap">
+          📥 Pobierz treść ze strony
+        </button>
+        <span id="fetchStatus" style="font-size:12px"></span>
+      </div>
+
+      <div class="fld">
+        <label class="lbl">Dodatkowe linki <span style="font-weight:400;color:#374151">(opcjonalnie)</span></label>
+        <div id="extraLinksList"></div>
+        <button class="btn b-ghost b-sm" onclick="addExtraLinkField()" style="margin-top:6px">+ Dodaj link</button>
+      </div>
+
+      <div class="fld">
+        <label class="lbl" id="contentLbl">Treść (tekst + zdjęcia)</label>
+        <div id="editorBlocks"></div>
+        <div class="ed-actions">
+          <button class="btn b-ghost b-sm" onclick="addTextBlock()">+ Tekst</button>
+          <button class="btn b-ghost b-sm" onclick="q('imgPick').click()">🖼 Dodaj zdjęcie</button>
+          <input type="file" id="imgPick" accept="image/*" style="display:none" onchange="addImgFile(this)">
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:11px;margin-top:4px;flex-wrap:wrap">
+        <button class="btn b-purple" onclick="submitArt()"><span id="submitBtnLabel">+ Dodaj</span></button>
+        <button class="btn b-ghost" onclick="cancelEdit()" id="cancelEditBtn" style="display:none">✕ Anuluj edycję</button>
+        <div id="addStatus"></div>
+      </div>
+    </div>
+
+      </div> <!-- koniec articles-left -->
+
+      <!-- PRAWA KOLUMNA: szukaj + filtry + lista artykułów -->
+      <div class="articles-right">
+
+        <!-- Szukaj -->
+        <div class="srch">
+          <svg width="13" height="13" fill="none" stroke="var(--text4)" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="srchIn" placeholder="Szukaj…" oninput="renderArts()">
+          <button onclick="q('srchIn').value='';renderArts()" style="background:none;border:none;color:var(--text4);cursor:pointer;font-size:17px;line-height:1">×</button>
+        </div>
+      <div class="articles-right">
+
+        <div id="exportStats" style="margin-bottom:12px"></div>
+
+        <!-- Filtr dat + sortowanie -->
+        <div class="card" style="padding:12px 14px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <span class="lbl" style="margin:0">Filtruj po dacie</span>
+            <span id="filterCount" style="font-size:12px;color:var(--text4)"></span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+            <input type="date" id="filterDateFrom" onchange="renderArts()" style="flex:1">
+            <span style="color:var(--text4);font-size:12px">—</span>
+            <input type="date" id="filterDateTo" onchange="renderArts()" style="flex:1">
+            <button class="btn b-ghost b-sm" onclick="clearDateFilter()">✕</button>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn b-ghost b-sm" onclick="toggleSortField()" id="sortFieldBtn" style="flex:1">📅 Wg daty artykułu</button>
+            <button class="btn b-ghost b-sm" onclick="toggleSortDirection()" id="sortDirBtn" style="flex:1">🔽 Najnowsze najpierw</button>
+          </div>
+        </div>
+
+        <!-- Zaznacz do eksportu -->
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+          <button class="btn b-ghost b-sm" onclick="selectAllVisible()">☑ Zaznacz widoczne</button>
+          <button class="btn b-ghost b-sm" onclick="clearSelection()">☐ Wyczyść zaznaczenie</button>
+        </div>
+
+        <!-- Historia eksportów do Word -->
+        <div class="card" id="exportHistoryCard" style="margin-bottom:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <strong style="font-size:13px">📋 Historia eksportów do Word</strong>
+            <div style="display:flex;gap:6px">
+              <button class="btn b-ghost b-sm" onclick="clearExportHistory()" title="Wyczyść historię">🗑</button>
+              <button class="btn b-ghost b-sm" onclick="toggleExportHistory()" id="exportHistoryToggle">▼ Rozwiń</button>
+            </div>
+          </div>
+          <div id="exportHistoryBody" style="display:none">
+            <p style="font-size:11px;color:var(--text4);margin-bottom:10px;line-height:1.5">
+              Tu widzisz każdy plik Word który wygenerowałeś. Jeśli plik nie zadziałał — kliknij „Cofnij" żeby oznaczyć te artykuły jako nowe i spróbować ponownie.
+            </p>
+            <div id="exportHistoryList"></div>
+          </div>
+        </div>
+
+        <div id="artList"></div>
+      </div>
+
+    </div> <!-- koniec articles-layout -->
+  </div>
+
+  <!-- Pasek zbiorczego eksportu (sticky bottom) -->
+  <div id="exportBar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);padding:12px 24px;z-index:500;align-items:center;gap:12px;box-shadow:0 -4px 20px rgba(0,0,0,.4)">
+    <span style="font-size:14px;color:var(--text2)">Zaznaczono: <strong id="exportCount" style="color:#34d399">0</strong></span>
+    <button class="btn b-green" style="margin-left:auto" onclick="exportSelectedToWord()">📄 Eksportuj do Word</button>
+  </div>
+
+  <!-- ── NOTATNIK ── -->
+  <div class="pg" id="pg-notepad">
+    <div class="card">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:13px;gap:10px;flex-wrap:wrap">
+        <div>
+          <strong style="font-size:15px;display:block;margin-bottom:3px">📝 Notatnik</strong>
+          <span style="font-size:12px;color:#374151">Tekst zapisuje się automatycznie w przeglądarce.</span>
+        </div>
+        <button class="btn b-green b-sm" onclick="exportNotepadWord()" id="noteWordBtn" style="flex-shrink:0">
+          📄 Eksportuj do Word
+        </button>
+      </div>
+
+      <!-- Bloki notatnika (tekst + zdjęcia) -->
+      <div id="noteBlocks"></div>
+      <div class="ed-actions" style="margin-top:8px">
+        <button class="btn b-ghost b-sm" onclick="addNoteTextBlock()">+ Tekst</button>
+        <button class="btn b-ghost b-sm" onclick="q('noteImgPick').click()">🖼 Dodaj zdjęcie</button>
+        <input type="file" id="noteImgPick" accept="image/*" style="display:none" onchange="addNoteImgFile(this)">
+      </div>
+      <div class="note-stats" id="noteStats">0 znaków</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast" style="display:none"></div>
+
+<script>
+// ── Helpers ───────────────────────────────────────────────────────────────
+const q = id => document.getElementById(id);
+
+// ── IndexedDB - warstwa przechowywania (zamiast localStorage dla dużych danych) ──
+const IDB_NAME = "doktorat_db";
+const IDB_VERSION = 1;
+const IDB_STORE = "kv"; // prosty key-value store
+
+let _idbInstance = null;
+
+function idbOpen() {
+  return new Promise((resolve, reject) => {
+    if (_idbInstance) { resolve(_idbInstance); return; }
+    const req = indexedDB.open(IDB_NAME, IDB_VERSION);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(IDB_STORE)) {
+        db.createObjectStore(IDB_STORE);
+      }
+    };
+    req.onsuccess = (e) => { _idbInstance = e.target.result; resolve(_idbInstance); };
+    req.onerror = (e) => reject(e.target.error);
+  });
+}
+
+async function idbSet(key, value) {
+  try {
+    const db = await idbOpen();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE, "readwrite");
+      tx.objectStore(IDB_STORE).put(value, key);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = (e) => reject(e.target.error);
+    });
+  } catch (e) {
+    console.error("idbSet error:", e);
+    return false;
+  }
+}
+
+async function idbGet(key) {
+  try {
+    const db = await idbOpen();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE, "readonly");
+      const req = tx.objectStore(IDB_STORE).get(key);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = (e) => reject(e.target.error);
+    });
+  } catch (e) {
+    console.error("idbGet error:", e);
+    return null;
+  }
+}
+
+async function idbDelete(key) {
+  try {
+    const db = await idbOpen();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE, "readwrite");
+      tx.objectStore(IDB_STORE).delete(key);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = (e) => reject(e.target.error);
+    });
+  } catch (e) {
+    console.error("idbDelete error:", e);
+    return false;
+  }
+}
+
+// Jednorazowa migracja danych ze starego localStorage do IndexedDB
+async function migrateFromLocalStorageIfNeeded() {
+  const migrated = localStorage.getItem("idb_migrated_v1");
+  if (migrated) return;
+
+  try {
+    const oldArticles = localStorage.getItem("arts_v1");
+    if (oldArticles) {
+      const parsed = JSON.parse(oldArticles);
+      await idbSet("articles", parsed);
+      console.log(`Migracja: przeniesiono ${parsed.length} artykułów do IndexedDB`);
+    }
+    const oldNotes = localStorage.getItem("note_v1");
+    if (oldNotes) {
+      const parsed = JSON.parse(oldNotes);
+      await idbSet("notepad", parsed);
+    }
+    localStorage.setItem("idb_migrated_v1", "1");
+    // Nie usuwamy starych danych z localStorage na wszelki przypadek - to tylko kilka KB tekstu max
+  } catch (e) {
+    console.error("Migracja nie powiodła się:", e);
+  }
+}
+
+
+const esc = s => String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
+let toastT;
+function toast(msg, ok=true) {
+  const el = q("toast");
+  el.textContent = (ok?"✓ ":"✗ ") + msg;
+  el.className = "toast " + (ok?"t-ok":"t-err");
+  el.style.display = "block";
+  clearTimeout(toastT);
+  toastT = setTimeout(()=>el.style.display="none", 3200);
+}
+
+// ── State ─────────────────────────────────────────────────────────────────
+let articles = [];
+let noteBlocks = []; // [{type:"text",value:""},{type:"image",value:"data:..."}]
+
+// ── Tabs ──────────────────────────────────────────────────────────────────
+function goTab(name) {
+  ["articles","notepad"].forEach((n,i) => {
+    document.querySelectorAll(".tab")[i].classList.toggle("on", n===name);
+    q("pg-"+n).classList.toggle("on", n===name);
+  });
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+window.addEventListener("DOMContentLoaded", async () => {
+  await migrateFromLocalStorageIfNeeded();
+
+  // Wczytaj artykuły z IndexedDB
+  try {
+    const stored = await idbGet("articles");
+    articles = Array.isArray(stored) ? stored : [];
+  } catch { articles = []; }
+
+  // Wczytaj notatnik z IndexedDB
+  try {
+    const storedNotes = await idbGet("notepad");
+    noteBlocks = Array.isArray(storedNotes) ? storedNotes : [];
+  } catch { noteBlocks = []; }
+  if (!noteBlocks.length) noteBlocks = [{type:"text",value:""}];
+
+  updateCounter();
+  renderArts();
+  renderNoteBlocks();
+  addTextBlock(); // pierwszy blok w formularzu
+  updateAutoSaveUI();
+  renderExportHistory();
+  updateStorageIndicator();
+  updatePersistentStorageBtnLabel();
+  initTheme();
+  if ("serviceWorker" in navigator) registerServiceWorkerWithAutoUpdate();
+  setupInstallPrompt();
+});
+
+// ── Service Worker - automatyczna aktualizacja ───────────────────────────
+let _swRegistration = null;
+
+// ── Przełącznik motywu ────────────────────────────────────────────────────
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  const newTheme = isDark ? 'light' : 'dark';
+  html.setAttribute('data-theme', newTheme);
+  localStorage.setItem('vvblack_theme', newTheme);
+  updateThemeBtn(newTheme);
+  updateLogoTextColor(newTheme);
+}
+
+function updateThemeBtn(theme) {
+  const btn = q('themeToggleBtn');
+  if (!btn) return;
+  btn.textContent = theme === 'dark' ? '☀️ Jasny' : '🌙 Ciemny';
+}
+
+function updateLogoTextColor(theme) {
+  const el = document.getElementById('logoBlackText');
+  if (!el) return;
+  el.setAttribute('fill', theme === 'dark' ? '#e2e8f0' : '#1a1a1a');
+}
+
+function initTheme() {
+  const saved = localStorage.getItem('vvblack_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+  updateThemeBtn(saved);
+  updateLogoTextColor(saved);
+}
+
+async function shareApp() {
+  const appUrl = window.location.href.split('?')[0].split('#')[0];
+  const shareData = {
+    title: "VVBlack — Baza Artykułów",
+    text: "Aplikacja do zarządzania artykułami naukowymi. Zainstaluj i dodaj do ekranu głównego:",
+    url: appUrl,
+  };
+
+  // Web Share API — natywny dialog Androida/Windows (WhatsApp, mail, SMS itd.)
+  if (navigator.share) {
+    try {
+      await navigator.share(shareData);
+      return;
+    } catch(e) {
+      if (e.name === "AbortError") return; // użytkownik anulował
+    }
+  }
+
+  // Fallback — bezpośredni link WhatsApp
+  const msg = encodeURIComponent(`${shareData.text}\n${appUrl}`);
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  const waUrl = isAndroid
+    ? `whatsapp://send?text=${msg}`
+    : `https://web.whatsapp.com/send?text=${msg}`;
+
+  window.open(waUrl, "_blank");
+}
+
+function registerServiceWorkerWithAutoUpdate() {
+  // Automatycznie wykryj ścieżkę — GitHub Pages używa /VVBLACK/, Netlify używa /
+  const swPath = location.pathname.startsWith('/VVBLACK') ? '/VVBLACK/sw.js' : '/sw.js';
+  navigator.serviceWorker.register(swPath, { updateViaCache: "none" }).then((reg) => {
+    _swRegistration = reg;
+
+    // Sprawdź aktualizacje przy każdym otwarciu aplikacji
+    reg.update().catch(()=>{});
+
+    // Gdy znajdzie się nowa wersja w trakcie instalacji
+    reg.addEventListener("updatefound", () => {
+      const newWorker = reg.installing;
+      if (!newWorker) return;
+
+      newWorker.addEventListener("statechange", () => {
+        if (newWorker.state === "installed" && reg.waiting) {
+          // Nowa wersja gotowa - poproś ją o przejęcie kontroli natychmiast
+          reg.waiting.postMessage("SKIP_WAITING");
+        }
+      });
+    });
+
+    // Sprawdzaj cyklicznie co 60s czy jest nowa wersja (przydatne gdy appka stoi otwarta długo)
+    setInterval(() => reg.update().catch(()=>{}), 60000);
+
+  }).catch(()=>{});
+
+  // Gdy nowy SW przejmie kontrolę - odśwież stronę automatycznie, raz
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (refreshing) return;
+    refreshing = true;
+    toast("Aktualizacja zainstalowana — odświeżam…");
+    setTimeout(() => window.location.reload(), 600);
+  });
+}
+
+// Wywoływane ręcznie przyciskiem - wymusza pobranie sw.js od serwera (z buster cache) i sprawdzenie wersji
+async function forceCheckForUpdate() {
+  const btn = q("checkUpdateBtn");
+  if (btn) { btn.disabled = true; btn.textContent = "⏳ Sprawdzam…"; }
+
+  try {
+    // Wykryj ścieżkę automatycznie — GitHub Pages vs Netlify vs Electron
+    const base = location.pathname.startsWith('/VVBLACK') ? '/VVBLACK' : '';
+    const bustUrl = `${base}/sw.js?_=${Date.now()}`;
+
+    const res = await fetch(bustUrl, { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    if (_swRegistration) {
+      await _swRegistration.update();
+      await new Promise(r => setTimeout(r, 800));
+    }
+
+    if (_swRegistration && _swRegistration.waiting) {
+      toast("Znaleziono nową wersję — instaluję…");
+    } else {
+      toast("Masz już najnowszą wersję ✓");
+    }
+  } catch (e) {
+    toast("Nie udało się sprawdzić aktualizacji: " + e.message, false);
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = "🔄 Sprawdź aktualizacje"; }
+}
+
+// ── Instalacja PWA (Dodaj do ekranu głównego) ────────────────────────────
+let deferredInstallPrompt = null;
+let installBannerDismissed = false;
+
+function setupInstallPrompt() {
+  // Już zainstalowana jako PWA (standalone)? — nic nie pokazuj
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+  if (isStandalone) return;
+
+  // Wyczyść starą flagę przy zmianie wersji — żeby baner znowu się pokazał
+  const savedVersion = localStorage.getItem('pwa_installed_version');
+  if (savedVersion !== 'v25') {
+    localStorage.removeItem('pwa_installed');
+    localStorage.setItem('pwa_installed_version', 'v37');
+  }
+
+  // Chrome/Android — przechwytuje natywny event instalacji
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+
+    // Pokaż baner po 1.5s
+    if (!installBannerDismissed) {
+      setTimeout(() => showInstallBanner(), 1500);
+    }
+    q('installBtn').style.display = 'block';
+  });
+
+  window.addEventListener('appinstalled', () => {
+    hideInstallBanner();
+    q('installBtn').style.display = 'none';
+    localStorage.setItem('pwa_installed', '1');
+    toast('✓ Aplikacja zainstalowana! Znajdź ikonę na ekranie głównym.');
+  });
+
+  // Fallback po 3s — zawsze pokaż instrukcję jeśli baner nie pojawił się automatycznie
+  setTimeout(() => {
+    if (!deferredInstallPrompt) {
+      const isAndroid = /Android/i.test(navigator.userAgent);
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const hint = q('installHint');
+      if (!hint) return;
+      if (isAndroid) {
+        hint.style.display = 'block';
+        hint.innerHTML = '📲 <strong>Zainstaluj:</strong> menu Chrome (⋮) → <strong style="color:var(--accent)">„Dodaj do ekranu głównego"</strong>';
+      } else if (isIOS) {
+        hint.style.display = 'block';
+        hint.innerHTML = '📲 <strong>Zainstaluj:</strong> przycisk Udostępnij (□↑) → <strong style="color:var(--accent)">„Dodaj do ekranu"</strong>';
+      }
+      // Pokaż też przycisk instalacji w pasku narzędzi
+      const btn = q('installBtn');
+      if (btn) btn.style.display = 'block';
+    }
+  }, 3000);
+}
+
+function showInstallBanner() {
+  const banner = q('installBanner');
+  if (banner) banner.style.display = 'block';
+}
+
+function hideInstallBanner() {
+  const banner = q('installBanner');
+  if (banner) banner.style.display = 'none';
+}
+
+function dismissInstallBanner() {
+  installBannerDismissed = true;
+  hideInstallBanner();
+  // Pokaż małą instrukcję w toolbarze
+  q('installBtn').style.display = 'block';
+}
+
+async function installFromBanner() {
+  if (!deferredInstallPrompt) {
+    toast('Użyj menu Chrome (⋮) → „Dodaj do ekranu głównego"', false);
+    return;
+  }
+  deferredInstallPrompt.prompt();
+  const { outcome } = await deferredInstallPrompt.userChoice;
+  if (outcome === 'accepted') {
+    toast('Instalowanie aplikacji…');
+    hideInstallBanner();
+  }
+  deferredInstallPrompt = null;
+}
+
+async function installApp() {
+  if (!deferredInstallPrompt) {
+    toast('Użyj menu Chrome (⋮) → „Dodaj do ekranu głównego"', false);
+    return;
+  }
+  await installFromBanner();
+  q('installBtn').style.display = 'none';
+}
+
+// ── Counter ───────────────────────────────────────────────────────────────
+function updateCounter() {
+  q("cNum").textContent = articles.length;
+  const nid = articles.length ? Math.max(...articles.map(a=>a.id))+1 : 1;
+  q("nextBadge").textContent = `@${nid}@`;
+}
+
+function saveArticles() {
+  // Zapis do IndexedDB w tle (asynchroniczny, nie blokuje UI)
+  idbSet("articles", articles).then(() => updateStorageIndicator());
+  scheduleAutoSave();
+}
+function saveNote() {
+  idbSet("notepad", noteBlocks).then(() => updateStorageIndicator());
+}
+
+// ── Wskaźnik wykorzystania pamięci ───────────────────────────────────────
+async function updateStorageIndicator() {
+  const el = q("storageIndicator");
+  if (!el) return;
+
+  try {
+    if (navigator.storage && navigator.storage.estimate) {
+      const { usage, quota } = await navigator.storage.estimate();
+      const usageMB = (usage / (1024*1024)).toFixed(1);
+      const quotaMB = (quota / (1024*1024)).toFixed(0);
+      const pct = quota > 0 ? Math.min(100, (usage/quota)*100) : 0;
+
+      let color = "#34d399"; // zielony
+      if (pct > 70) color = "#fbbf24"; // żółty
+      if (pct > 90) color = "#f87171"; // czerwony
+
+      el.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-size:11px;color:#4b5563">💾 Pamięć (IndexedDB)</span>
+          <span style="font-size:11px;color:${color};font-weight:700">${usageMB} MB / ${quotaMB} MB</span>
+        </div>
+        <div style="height:5px;background:#1e1e2a;border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${color};border-radius:3px;transition:width 0.3s"></div>
+        </div>
+      `;
+    } else {
+      el.innerHTML = `<span style="font-size:11px;color:#374151">Wskaźnik pamięci niedostępny w tej przeglądarce</span>`;
+    }
+  } catch (e) {
+    el.innerHTML = `<span style="font-size:11px;color:#374151">Nie udało się odczytać wykorzystania pamięci</span>`;
+  }
+}
+
+// Poproś przeglądarkę o trwałe przechowywanie (mniejsza szansa na automatyczne czyszczenie)
+async function requestPersistentStorage() {
+  if (!(navigator.storage && navigator.storage.persist)) {
+    toast("Ta funkcja nie jest wspierana w tej przeglądarce", false);
+    return;
+  }
+
+  const isPersisted = await navigator.storage.persisted();
+
+  if (isPersisted) {
+    // Web API nie ma funkcji "odwołaj" - to ograniczenie przeglądarki, nie aplikacji.
+    // Trwałe przechowywanie można wyłączyć tylko ręcznie w ustawieniach Chrome.
+    alert(
+      "Trwałe przechowywanie jest już włączone.\n\n" +
+      "Przeglądarki nie pozwalają stronom programowo wyłączyć tej opcji — to celowe zabezpieczenie.\n\n" +
+      "Aby wyłączyć ręcznie w Chrome:\n" +
+      "1. Otwórz Chrome → menu (⋮) → Ustawienia\n" +
+      "2. Ustawienia witryn → Pamięć i dane offline\n" +
+      "3. Znajdź adres tej aplikacji\n" +
+      "4. Wybierz 'Usuń' lub zmień uprawnienia\n\n" +
+      "To nie usunie Twoich danych - tylko pozwoli systemowi je wyczyścić przy niskim miejscu na dysku."
+    );
+    return;
+  }
+
+  const granted = await navigator.storage.persist();
+  toast(granted ? "Trwałe przechowywanie włączone ✓" : "Przeglądarka nie przyznała trwałego przechowywania", granted);
+  updatePersistentStorageBtnLabel();
+}
+
+async function updatePersistentStorageBtnLabel() {
+  const btn = q("persistBtn");
+  if (!btn || !(navigator.storage && navigator.storage.persisted)) return;
+  const isPersisted = await navigator.storage.persisted();
+  btn.innerHTML = isPersisted
+    ? "🔒 Trwałe przechowywanie: WŁ (kliknij po instrukcję wyłączenia)"
+    : "🔓 Włącz trwałe przechowywanie";
+}
+
+// ── Render articles ───────────────────────────────────────────────────────
+let sortDirection = "desc"; // "desc" = najnowsze pierwsze, "asc" = najstarsze pierwsze
+let sortField = "date"; // "date" = data artykułu, "added" = data dodania do bazy
+
+function sortAndRenderArts() {
+  // Sortuj tablicę articles "na trwałe" po dacie (chronologicznie)
+  articles.sort((a,b) => {
+    const da = a.date || a.addedAt || "";
+    const db = b.date || b.addedAt || "";
+    return da.localeCompare(db); // rosnąco po dacie jako bazowa kolejność
+  });
+  saveArticles();
+  renderArts();
+}
+
+function toggleSortDirection() {
+  sortDirection = sortDirection === "desc" ? "asc" : "desc";
+  updateSortBtnLabel();
+  renderArts();
+}
+
+function toggleSortField() {
+  sortField = sortField === "date" ? "added" : "date";
+  updateSortBtnLabel();
+  renderArts();
+}
+
+function updateSortBtnLabel() {
+  q("sortDirBtn").innerHTML = sortDirection==="desc" ? "🔽 Najnowsze najpierw" : "🔼 Najstarsze najpierw";
+  q("sortFieldBtn").innerHTML = sortField==="date" ? "📅 Wg daty artykułu" : "🕐 Wg ostatnio dodanych";
+}
+
+function renderArts() {
+  const srch    = q("srchIn").value.toLowerCase();
+  const dateFrom = q("filterDateFrom")?.value || "";
+  const dateTo   = q("filterDateTo")?.value || "";
+  const statusFilter = window.exportStatusFilter || "all"; // "all" | "exported" | "new"
+
+  let list = articles.filter(a => {
+    if (srch) {
+      const txt = (a.blocks||[]).filter(b=>b.type==="text").map(b=>b.value).join(" ");
+      const match = (a.title||"").toLowerCase().includes(srch) ||
+             txt.toLowerCase().includes(srch) ||
+             (a.link||"").toLowerCase().includes(srch) ||
+             String(a.id).includes(srch);
+      if (!match) return false;
+    }
+    if (dateFrom && a.date && a.date < dateFrom) return false;
+    if (dateTo   && a.date && a.date > dateTo)   return false;
+    if ((dateFrom || dateTo) && !a.date) return false;
+    if (statusFilter === "exported" && !a.wordExported) return false;
+    if (statusFilter === "new" && a.wordExported) return false;
+    return true;
+  });
+
+  // Sortuj wg wybranego pola i kierunku
+  list = [...list].sort((a,b) => {
+    let da, db;
+    if (sortField === "added") {
+      da = a.addedAt || "";
+      db = b.addedAt || "";
+    } else {
+      da = a.date || a.addedAt || "";
+      db = b.date || b.addedAt || "";
+    }
+    return sortDirection === "desc" ? db.localeCompare(da) : da.localeCompare(db);
+  });
+
+  const el = q("artList");
+  q("filterCount").textContent = `${list.length} / ${articles.length} artykułów`;
+
+  // Statystyki: ile wyeksportowane, ile nowych — klikalne odznaki filtrujące
+  const exportedCount = articles.filter(a=>a.wordExported).length;
+  const newCount = articles.length - exportedCount;
+  const activeAll      = statusFilter==="all"      ? "outline:2px solid #818cf8" : "";
+  const activeExported = statusFilter==="exported" ? "outline:2px solid #34d399" : "";
+  const activeNew      = statusFilter==="new"      ? "outline:2px solid #f59e0b" : "";
+  q("exportStats").innerHTML = articles.length ? `
+    <span class="exported-badge" style="cursor:pointer;${activeExported}" onclick="setExportFilter('exported')">✓ ${exportedCount} wyeksportowanych</span>
+    <span class="exported-badge" style="background:rgba(245,158,11,.12);color:#f59e0b;border-color:rgba(245,158,11,.25);margin-left:6px;cursor:pointer;${activeNew}" onclick="setExportFilter('new')">🆕 ${newCount} nowych</span>
+    ${statusFilter!=="all" ? `<span class="exported-badge" style="background:#1e1e2a;color:#94a3b8;margin-left:6px;cursor:pointer;${activeAll}" onclick="setExportFilter('all')">✕ Pokaż wszystkie</span>` : ""}
+  ` : "";
+
+  if (!list.length) {
+    el.innerHTML = `<div style="text-align:center;color:#374151;padding:44px 16px;font-size:14px">
+      ${articles.length ? "Brak wyników dla podanych filtrów." : "Baza pusta — dodaj pierwszy artykuł powyżej."}</div>`;
+    return;
+  }
+
+  el.innerHTML = list.map(a => {
+    const textParts = (a.blocks||[]).filter(b=>b.type==="text").map(b=>b.value).join("\n").trim();
+    const imgCount  = (a.blocks||[]).filter(b=>b.type==="image").length;
+    let preview   = textParts.slice(0,180)+(textParts.length>180?"…":"");
+
+    // Jeśli szukane słowo nie jest w widocznym fragmencie, ale jest dalej w tekście — pokaż fragment WOKÓŁ frazy
+    if (srch) {
+      const lowerTxt = textParts.toLowerCase();
+      const idx = lowerTxt.indexOf(srch);
+      if (idx >= 0 && !preview.toLowerCase().includes(srch)) {
+        const start = Math.max(0, idx - 60);
+        const end   = Math.min(textParts.length, idx + srch.length + 120);
+        preview = (start>0?"…":"") + textParts.slice(start, end) + (end<textParts.length?"…":"");
+      }
+    }
+
+    const previewHtml = srch ? highlightMatch(preview, srch) : esc(preview);
+    const titleHtml   = srch ? highlightMatch(a.title||"Bez tytułu", srch) : esc(a.title||"Bez tytułu");
+
+    const dateStr   = a.date ? `📅 ${fmtDate(a.date)}` : "";
+    const linkShort = a.link ? a.link.replace(/^https?:\/\//,"").slice(0,48) : "";
+    const checked   = selectedForExport.has(a.id) ? "checked" : "";
+    const cardClass = a.wordExported ? "card-exported" : "card-new";
+    const statusBadge = a.wordExported
+      ? `<span class="exported-badge">✓ W Word</span>`
+      : `<span class="exported-badge" style="background:rgba(245,158,11,.12);color:#f59e0b;border-color:rgba(245,158,11,.25)">🆕 Nowy</span>`;
+    const typeBadge = a.entryType === "note"
+      ? `<span class="exported-badge" style="background:rgba(167,139,250,.12);color:#a78bfa;border-color:rgba(167,139,250,.25)">✏️ Notatka</span>`
+      : "";
+    return `<div class="card card-hl ${cardClass}" style="animation:fadeUp .18s ease">
+      <div style="display:flex;align-items:flex-start;gap:9px">
+        <input type="checkbox" ${checked} onchange="toggleExportSelect(${a.id},this.checked)"
+          style="width:18px;height:18px;accent-color:#34d399;flex-shrink:0;margin-top:3px">
+        <span class="badge" style="flex-shrink:0;margin-top:2px">@${a.id}@</span>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+            <div style="font-weight:700;font-size:14px">${titleHtml || (a.entryType==="note" ? "Notatka bez tytułu" : "Bez tytułu")}</div>
+            ${statusBadge}
+            ${typeBadge}
+          </div>
+          <div class="art-meta">
+            ${dateStr?`<span>${dateStr}</span>`:""}
+            ${linkShort?`<a href="${esc(a.link)}" target="_blank" rel="noopener">🔗 ${esc(linkShort)}${a.link.length>51?"…":""}</a>`:""}
+            ${imgCount?`<span style="color:#818cf8">🖼 ${imgCount} zdjęcie${imgCount>1?"(a)":""}</span>`:""}
+            ${(a.extraLinks&&a.extraLinks.length)?`<span style="color:#a78bfa">🔗+${a.extraLinks.length} link${a.extraLinks.length>1?"i":""}</span>`:""}
+          </div>
+          ${(a.extraLinks&&a.extraLinks.length)?`<div style="margin-top:4px;display:flex;flex-direction:column;gap:2px">
+            ${a.extraLinks.map(l=>`<a href="${esc(l)}" target="_blank" rel="noopener" style="font-size:11px;color:#a78bfa">↳ ${esc(l.replace(/^https?:\/\//,"").slice(0,55))}${l.length>58?"…":""}</a>`).join("")}
+          </div>`:""}
+          <div class="art-text" id="at-${a.id}">${previewHtml}</div>
+          <button class="expand-btn" onclick="toggleExp(${a.id})" id="eb-${a.id}">▼ Rozwiń</button>
+          <div class="art-btns">
+            <button class="btn b-ghost b-sm" onclick="startEditArticle(${a.id})">✏️ Edytuj</button>
+            <button class="btn b-ghost b-sm" onclick="artToNote(${a.id})">📝 Do Notatnika</button>
+            <button class="btn b-red b-sm" onclick="delArt(${a.id})">🗑 Usuń</button>
+          </div>
+          <div style="font-size:10px;color:#374151;margin-top:7px">Dodano: ${fmtDT(a.addedAt)}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function highlightMatch(text, query) {
+  const escText = esc(text);
+  if (!query) return escText;
+  const escQuery = esc(query).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`(${escQuery})`, "ig");
+  return escText.replace(re, '<mark style="background:#fbbf24;color:#1c1917;border-radius:3px;padding:0 2px">$1</mark>');
+}
+
+function setExportFilter(mode) {
+  window.exportStatusFilter = window.exportStatusFilter === mode ? "all" : mode;
+  renderArts();
+}
+
+// ── Zbiorczy eksport do Word ─────────────────────────────────────────────
+let selectedForExport = new Set();
+
+function toggleExportSelect(id, checked) {
+  if (checked) selectedForExport.add(id); else selectedForExport.delete(id);
+  updateExportBar();
+}
+
+function selectAllVisible() {
+  const srch    = q("srchIn").value.toLowerCase();
+  const dateFrom = q("filterDateFrom")?.value || "";
+  const dateTo   = q("filterDateTo")?.value || "";
+  const statusFilter = window.exportStatusFilter || "all";
+  articles.forEach(a => {
+    if (srch) {
+      const txt = (a.blocks||[]).filter(b=>b.type==="text").map(b=>b.value).join(" ");
+      const match = (a.title||"").toLowerCase().includes(srch) ||
+             txt.toLowerCase().includes(srch) ||
+             (a.link||"").toLowerCase().includes(srch) || String(a.id).includes(srch);
+      if (!match) return;
+    }
+    if (dateFrom && a.date && a.date < dateFrom) return;
+    if (dateTo   && a.date && a.date > dateTo)   return;
+    if ((dateFrom||dateTo) && !a.date) return;
+    if (statusFilter === "exported" && !a.wordExported) return;
+    if (statusFilter === "new" && a.wordExported) return;
+    selectedForExport.add(a.id);
+  });
+  renderArts(); updateExportBar();
+}
+
+function clearSelection() {
+  selectedForExport.clear();
+  renderArts(); updateExportBar();
+}
+
+function updateExportBar() {
+  const bar = q("exportBar");
+  const n = selectedForExport.size;
+  q("exportCount").textContent = n;
+  bar.style.display = n>0 ? "flex" : "none";
+}
+
+function clearDateFilter() {
+  q("filterDateFrom").value=""; q("filterDateTo").value="";
+  renderArts();
+}
+
+
+
+function fmtDate(d) {
+  try { return new Date(d+"T12:00:00").toLocaleDateString("pl-PL",{day:"2-digit",month:"long",year:"numeric"}); }
+  catch { return d; }
+}
+function fmtDT(d) {
+  try { return new Date(d).toLocaleString("pl-PL"); }
+  catch { return d||""; }
+}
+
+// ── Expand article ────────────────────────────────────────────────────────
+const expanded = new Set();
+function toggleExp(id) {
+  const a = articles.find(x=>x.id===id); if (!a) return;
+  const el = q("at-"+id);
+  const btn = q("eb-"+id);
+  if (expanded.has(id)) {
+    expanded.delete(id);
+    const txt = (a.blocks||[]).filter(b=>b.type==="text").map(b=>b.value).join("\n").trim();
+    el.className = "art-text";
+    el.textContent = txt.slice(0,180)+(txt.length>180?"…":"");
+    btn.textContent = "▼ Rozwiń";
+  } else {
+    expanded.add(id);
+    let html = "";
+    for (const b of (a.blocks||[])) {
+      if (b.type==="text") html += `<p style="margin-bottom:8px;white-space:pre-wrap">${esc(b.value)}</p>`;
+      else if (b.type==="image") html += `<img src="${b.value}" class="art-img">`;
+    }
+    el.className = "art-text";
+    el.innerHTML = html;
+    btn.textContent = "▲ Zwiń";
+  }
+}
+
+// ── Add article ───────────────────────────────────────────────────────────
+function getEditorBlocks() {
+  const blocks = [];
+  q("editorBlocks").querySelectorAll(".blk").forEach(w => {
+    const ta  = w.querySelector("textarea");
+    const img = w.querySelector("img");
+    if (ta)  blocks.push({type:"text",  value:ta.value});
+    if (img) blocks.push({type:"image", value:img.src});
+  });
+  return blocks;
+}
+
+// ── Dodatkowe linki ─────────────────────────────────────────────────────
+function addExtraLinkField(value="") {
+  const list = q("extraLinksList");
+  const row = document.createElement("div");
+  row.className = "extra-link-row";
+  row.style.cssText = "display:flex;gap:6px;margin-bottom:6px";
+  const input = document.createElement("input");
+  input.type = "url";
+  input.placeholder = "https://… (dodatkowy link)";
+  input.value = value;
+  input.style.flex = "1";
+  const rm = document.createElement("button");
+  rm.className = "btn b-ghost b-sm";
+  rm.textContent = "✕";
+  rm.onclick = () => row.remove();
+  row.appendChild(input);
+  row.appendChild(rm);
+  list.appendChild(row);
+}
+
+function getExtraLinks() {
+  return [...q("extraLinksList").querySelectorAll("input")]
+    .map(i => i.value.trim())
+    .filter(Boolean);
+}
+
+function clearExtraLinks() {
+  q("extraLinksList").innerHTML = "";
+}
+
+function loadExtraLinks(links) {
+  clearExtraLinks();
+  (links||[]).forEach(l => addExtraLinkField(l));
+}
+
+let editingArticleId = null; // jeśli ustawione, submitArt() edytuje istniejący artykuł
+let currentEntryType = "article"; // "article" | "note"
+
+function setEntryType(type) {
+  currentEntryType = type;
+  const isNote = type === "note";
+
+  q("typeArticleBtn").className = isNote ? "btn b-ghost b-sm" : "btn b-purple b-sm";
+  q("typeNoteBtn").className    = isNote ? "btn b-purple b-sm" : "btn b-ghost b-sm";
+
+  q("fTitle").placeholder = isNote ? "Tytuł notatki… (opcjonalnie)" : "Tytuł artykułu…";
+  q("titleLbl").textContent = isNote ? "Tytuł (opcjonalnie)" : "Tytuł";
+  q("linkOptLbl").textContent = isNote ? "(opcjonalnie)" : "";
+  q("contentLbl").textContent = isNote ? "Twoja notatka (tekst + zdjęcia)" : "Treść (tekst + zdjęcia)";
+
+  const ta = q("editorBlocks").querySelector("textarea");
+  if (ta) ta.placeholder = isNote
+    ? "Wpisz własne notatki… (np. z filmu YouTube, wykładu, rozmowy)"
+    : "Wpisz lub wklej tekst… (Ctrl+V wklei też zdjęcie)";
+}
+
+function submitArt() {
+  const title  = q("fTitle").value.trim();
+  const link   = q("fLink").value.trim();
+  const date   = q("fDate").value.trim();
+  const blocks = getEditorBlocks();
+  const extraLinks = getExtraLinks();
+  const txt    = blocks.filter(b=>b.type==="text").map(b=>b.value).join(" ").trim();
+  const entryType = currentEntryType;
+
+  if (!title && !txt) {
+    toast(entryType==="note" ? "Wpisz treść notatki" : "Wpisz tytuł lub treść", false);
+    return;
+  }
+
+  // Sprawdź duplikat (po tytule, treści lub linku) — pomijając edytowany artykuł
+  const isDup = articles.some(a => {
+    if (editingArticleId && a.id === editingArticleId) return false;
+    const at = (a.blocks||[]).filter(b=>b.type==="text").map(b=>b.value).join(" ").trim();
+    const sameLink = link && a.link && normalizeUrl(a.link) === normalizeUrl(link);
+    return (title && (a.title||"").toLowerCase()===title.toLowerCase()) ||
+           (txt && at === txt) || sameLink;
+  });
+  if (isDup) { q("addStatus").innerHTML=`<span class="s-err">✗ Już w bazie! (taki tytuł, treść lub link)</span>`; setTimeout(()=>q("addStatus").innerHTML="",3500); return; }
+
+  if (editingArticleId) {
+    // Aktualizuj istniejący artykuł
+    const art = articles.find(a=>a.id===editingArticleId);
+    if (art) {
+      art.title = title; art.link = link; art.date = date; art.blocks = blocks;
+      art.extraLinks = extraLinks;
+      art.entryType = entryType;
+      art.editedAt = new Date().toISOString();
+      // Treść się zmieniła - oznacz jako nowy (nie wyeksportowany) ponownie
+      if (art.wordExported) { art.wordExported = false; delete art.wordExportedAt; }
+    }
+    saveArticles(); updateCounter(); sortAndRenderArts();
+    cancelEdit();
+    q("addStatus").innerHTML=`<span class="s-ok">✓ Zapisano zmiany!</span>`;
+    setTimeout(()=>q("addStatus").innerHTML="",3000);
+    return;
+  }
+
+  const nid = articles.length ? Math.max(...articles.map(a=>a.id))+1 : 1;
+  articles.push({id:nid, title, link, date, blocks, extraLinks, entryType, addedAt:new Date().toISOString()});
+  saveArticles();
+  updateCounter();
+  sortAndRenderArts();
+
+  // Reset
+  q("fTitle").value=""; q("fLink").value=""; q("fDate").value="";
+  q("editorBlocks").innerHTML=""; addTextBlock();
+  clearExtraLinks();
+  setEntryType("article"); // wróć do domyślnego typu po dodaniu
+  q("addStatus").innerHTML=`<span class="s-ok">✓ Dodano! Pobierz JSON.</span>`;
+  setTimeout(()=>q("addStatus").innerHTML="",3000);
+}
+
+function normalizeUrl(u) {
+  try {
+    const url = new URL(u);
+    ["fbclid","utm_source","utm_medium","utm_campaign","utm_content","utm_term","aem_id","ref","source"]
+      .forEach(p => url.searchParams.delete(p));
+    return (url.origin + url.pathname).replace(/\/$/,"").toLowerCase();
+  } catch { return u.trim().toLowerCase(); }
+}
+
+// Sprawdzanie duplikatu linku na żywo, podczas wpisywania
+function checkLinkDuplicateLive() {
+  const link = q("fLink").value.trim();
+  const warnEl = q("linkDupWarn");
+  if (!link) { warnEl.style.display="none"; return; }
+  const dup = articles.find(a => {
+    if (editingArticleId && a.id === editingArticleId) return false;
+    return a.link && normalizeUrl(a.link) === normalizeUrl(link);
+  });
+  if (dup) {
+    warnEl.style.display="block";
+    warnEl.innerHTML = `⚠️ Ten link już jest w bazie: <strong>@${dup.id}@ ${esc(dup.title||"")}</strong>`;
+  } else {
+    warnEl.style.display="none";
+  }
+}
+
+function startEditArticle(id) {
+  const art = articles.find(a=>a.id===id); if (!art) return;
+  editingArticleId = id;
+
+  setEntryType(art.entryType === "note" ? "note" : "article");
+
+  q("fTitle").value = art.title || "";
+  q("fLink").value  = art.link  || "";
+  q("fDate").value  = art.date  || "";
+  loadExtraLinks(art.extraLinks);
+
+  q("editorBlocks").innerHTML = "";
+  const blocks = art.blocks && art.blocks.length ? art.blocks : [{type:"text",value:""}];
+  blocks.forEach(b => {
+    if (b.type==="text") {
+      addTextBlock();
+      const tas = q("editorBlocks").querySelectorAll("textarea");
+      tas[tas.length-1].value = b.value;
+    } else if (b.type==="image") {
+      addImgBlockToEditor(b.value);
+    }
+  });
+
+  q("formTitle").textContent = `Edytuj ${art.entryType==="note" ? "notatkę" : "artykuł"} @${id}@`;
+  q("submitBtnLabel").textContent = "💾 Zapisz zmiany";
+  q("cancelEditBtn").style.display = "inline-flex";
+  checkLinkDuplicateLive();
+
+  goTab("articles");
+  q("addForm").scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+function cancelEdit() {
+  editingArticleId = null;
+  q("fTitle").value=""; q("fLink").value=""; q("fDate").value="";
+  q("editorBlocks").innerHTML=""; addTextBlock();
+  clearExtraLinks();
+  setEntryType("article");
+  q("formTitle").textContent = "Dodaj wpis";
+  q("submitBtnLabel").textContent = "+ Dodaj";
+  q("cancelEditBtn").style.display = "none";
+  q("linkDupWarn").style.display = "none";
+}
+
+function delArt(id) {
+  if (!confirm("Usunąć artykuł?")) return;
+  articles = articles.filter(a=>a.id!==id);
+  selectedForExport.delete(id);
+  if (editingArticleId === id) cancelEdit();
+  saveArticles(); updateCounter(); renderArts(); updateExportBar();
+  toast("Usunięto");
+}
+
+// ── Article editor blocks ─────────────────────────────────────────────────
+function addTextBlock() {
+  const c = q("editorBlocks");
+  const w = document.createElement("div"); w.className="blk";
+  const ta = document.createElement("textarea");
+  ta.style.height="110px";
+  ta.placeholder = c.children.length===0
+    ? "Wpisz lub wklej tekst… (Ctrl+V wklei też zdjęcie)"
+    : "Tekst po zdjęciu…";
+  ta.addEventListener("paste", handlePaste);
+  if (c.children.length>0) {
+    const rm=document.createElement("button"); rm.className="blk-rm"; rm.textContent="✕";
+    rm.onclick=()=>w.remove(); w.appendChild(rm);
+  }
+  w.appendChild(ta); c.appendChild(w); ta.focus();
+}
+
+function addImgBlockToEditor(dataURL) {
+  const c = q("editorBlocks");
+  const w = document.createElement("div"); w.className="blk";
+  const d = document.createElement("div"); d.className="img-blk";
+  const img = document.createElement("img"); img.src=dataURL;
+  const rm = document.createElement("button"); rm.className="img-rm"; rm.textContent="Usuń";
+  rm.onclick=()=>w.remove();
+  d.appendChild(img); d.appendChild(rm); w.appendChild(d); c.appendChild(w);
+  addTextBlock();
+}
+
+function addImgFile(input) {
+  const f=input.files[0]; if (!f) return;
+  const r=new FileReader(); r.onload=e=>addImgBlockToEditor(e.target.result); r.readAsDataURL(f);
+  input.value="";
+}
+
+function handlePaste(e) {
+  const items=e.clipboardData?.items||[];
+  for (const it of items) {
+    if (it.type.startsWith("image/")) {
+      e.preventDefault();
+      const r=new FileReader(); r.onload=ev=>addImgBlockToEditor(ev.target.result); r.readAsDataURL(it.getAsFile());
+      return;
+    }
+  }
+}
+
+// ── Art → Notatnik ────────────────────────────────────────────────────────
+function artToNote(id) {
+  // Synchronizuj textarea -> noteBlocks przed dodaniem
+  syncNoteBlocksFromDOM();
+  const a = articles.find(x=>x.id===id); if (!a) return;
+
+  // Zbierz cały tekst artykułu w JEDEN blok
+  const linie = [];
+  linie.push(`@${a.id}@ ${a.title||""}`);
+  if (a.date) linie.push(`Data: ${a.date}`);
+  if (a.link) linie.push(`Link: ${a.link}`);
+  if (a.extraLinks && a.extraLinks.length) {
+    a.extraLinks.forEach((l,li) => linie.push(`Link dodatkowy ${li+1}: ${l}`));
+  }
+  linie.push("─".repeat(36));
+
+  const tekstBloki = (a.blocks||[]).filter(b=>b.type==="text" && b.value.trim());
+  const obrazBloki = (a.blocks||[]).filter(b=>b.type==="image");
+
+  tekstBloki.forEach(b => linie.push(b.value));
+
+  // Usuń pusty pierwszy blok jeśli jest
+  if (noteBlocks.length===1 && noteBlocks[0].type==="text" && !noteBlocks[0].value.trim()) {
+    noteBlocks = [];
+  }
+
+  // Dodaj jako jeden blok tekstowy
+  noteBlocks.push({type:"text", value: linie.join("\n")});
+
+  // Dodaj obrazy po tekście
+  obrazBloki.forEach(b => {
+    noteBlocks.push({type:"image", value:b.value});
+    noteBlocks.push({type:"text", value:""});
+  });
+
+  saveNote(); renderNoteBlocks(); goTab("notepad");
+  toast(`Artykuł @${a.id}@ dodany do Notatnika`);
+}
+
+// ── Export / Import JSON ──────────────────────────────────────────────────
+function exportArticles() {
+  const now = new Date();
+  const exportedAt = now.toISOString();
+  const enriched = articles.map(a => ({ ...a, exportedAt }));
+  const data = JSON.stringify({articles: enriched, exportedAt, generatedAt: now.toLocaleString("pl-PL")}, null, 2);
+  const dateStamp = now.toISOString().slice(0,10); // YYYY-MM-DD
+  const filename = `doktorat_${dateStamp}.json`;
+  dlBlob(data, "application/json", filename);
+  toast(`Plik ${filename} pobrany`);
+}
+
+// ── Auto-zapis JSON po każdej zmianie ────────────────────────────────────
+let autoSaveEnabled = localStorage.getItem("auto_save_enabled") === "1";
+let autoSaveTimer = null;
+
+function toggleAutoSave() {
+  autoSaveEnabled = !autoSaveEnabled;
+  localStorage.setItem("auto_save_enabled", autoSaveEnabled ? "1" : "0");
+  updateAutoSaveUI();
+  toast(autoSaveEnabled ? "Auto-zapis włączony" : "Auto-zapis wyłączony");
+}
+
+function updateAutoSaveUI() {
+  const btn = q("autoSaveToggle");
+  if (!btn) return;
+  btn.textContent = autoSaveEnabled ? "🟢 Auto-zapis: WŁ" : "⚪ Auto-zapis: WYŁ";
+  btn.style.color = autoSaveEnabled ? "#34d399" : "#94a3b8";
+}
+
+function scheduleAutoSave() {
+  if (!autoSaveEnabled) return;
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(() => {
+    exportArticles();
+  }, 1200); // czekaj 1.2s po ostatniej zmianie żeby nie pobierać wielu plików naraz
+}
+
+function importArticles(input) {
+  const f=input.files[0]; if (!f) return;
+  f.text().then(t=>{
+    try {
+      const d=JSON.parse(t);
+      const list = Array.isArray(d)?d:d.articles;
+      if (!Array.isArray(list)) throw 1;
+      articles=list; saveArticles(); updateCounter(); renderArts();
+      toast(`Wczytano ${list.length} artykułów`);
+    } catch { toast("Nieprawidłowy plik", false); }
+    input.value="";
+  });
+}
+
+function syncNoteBlocksFromDOM() {
+  const allTa = q("noteBlocks").querySelectorAll("textarea");
+  let taIdx = 0;
+  noteBlocks.forEach((bl)=>{ if(bl.type==="text"){ if(allTa[taIdx]) bl.value=allTa[taIdx].value; taIdx++; } });
+}
+
+function exportNotepad() {
+  syncNoteBlocksFromDOM();
+  saveNote();
+  const now = new Date();
+  const data = JSON.stringify({
+    blocks: noteBlocks,
+    savedAt: now.toISOString(),
+    generatedAt: now.toLocaleString("pl-PL")
+  }, null, 2);
+  const dateStamp = now.toISOString().slice(0,10);
+  const filename = `doktorat_notatnik_${dateStamp}.json`;
+  dlBlob(data, "application/json", filename);
+  toast(`Plik ${filename} pobrany`);
+}
+
+function importNotepad(input) {
+  const f=input.files[0]; if (!f) return;
+  f.text().then(t=>{
+    try {
+      const d=JSON.parse(t);
+      const blocks = d.blocks||d;
+      if (!Array.isArray(blocks)) throw 1;
+      noteBlocks=blocks; saveNote(); renderNoteBlocks();
+      toast("Notatnik wczytany");
+    } catch { toast("Nieprawidłowy plik", false); }
+    input.value="";
+  });
+}
+
+function dlBlob(content, mime, name) {
+  const url=URL.createObjectURL(new Blob([content],{type:mime}));
+  const a=document.createElement("a"); a.href=url; a.download=name; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Notepad blocks ────────────────────────────────────────────────────────
+function renderNoteBlocks() {
+  const c = q("noteBlocks");
+  c.innerHTML="";
+  noteBlocks.forEach((b,i)=>{
+    const w=document.createElement("div"); w.className="blk";
+    if (b.type==="text") {
+      const ta=document.createElement("textarea");
+      ta.value=b.value; ta.style.height="110px";
+      ta.placeholder="Tekst notatki…";
+      ta.addEventListener("paste", handleNotePaste);
+      ta.oninput=()=>{ syncNoteBlocksFromDOM(); saveNote(); updateNoteStats(); };
+      // Przycisk usuwania ZAWSZE (nawet dla pierwszego bloku jeśli jest ich więcej)
+      const rm=document.createElement("button"); rm.className="blk-rm"; rm.textContent="✕";
+      rm.title="Usuń ten blok";
+      rm.onclick=()=>{
+        if(noteBlocks.length===1){ noteBlocks[0].value=""; ta.value=""; saveNote(); updateNoteStats(); return; }
+        noteBlocks.splice(i,1); saveNote(); renderNoteBlocks();
+      };
+      w.appendChild(rm);
+      w.appendChild(ta);
+    } else if (b.type==="image") {
+      const d=document.createElement("div"); d.className="img-blk";
+      const img=document.createElement("img"); img.src=b.value;
+      const rm=document.createElement("button"); rm.className="img-rm"; rm.textContent="✕ Usuń zdjęcie";
+      rm.onclick=()=>{ noteBlocks.splice(i,1); saveNote(); renderNoteBlocks(); };
+      d.appendChild(img); d.appendChild(rm); w.appendChild(d);
+    }
+    c.appendChild(w);
+  });
+  updateNoteStats();
+}
+
+function updateNoteStats() {
+  const txt = noteBlocks.filter(b=>b.type==="text").map(b=>b.value).join("");
+  const imgs = noteBlocks.filter(b=>b.type==="image").length;
+  q("noteStats").textContent = `${txt.length} znaków · ${imgs} zdjęcie(a)`;
+}
+
+function addNoteTextBlock() {
+  noteBlocks.push({type:"text",value:""});
+  saveNote(); renderNoteBlocks();
+  // Focus na ostatnim textarea
+  const tas = q("noteBlocks").querySelectorAll("textarea");
+  if (tas.length) tas[tas.length-1].focus();
+}
+
+function addNoteImgFile(input) {
+  const f=input.files[0]; if (!f) return;
+  const r=new FileReader();
+  r.onload=e=>{ noteBlocks.push({type:"image",value:e.target.result}); noteBlocks.push({type:"text",value:""}); saveNote(); renderNoteBlocks(); };
+  r.readAsDataURL(f); input.value="";
+}
+
+function handleNotePaste(e) {
+  const items=e.clipboardData?.items||[];
+  for (const it of items) {
+    if (it.type.startsWith("image/")) {
+      e.preventDefault();
+      const r=new FileReader();
+      r.onload=ev=>{
+        const ta=e.target;
+        const idx=[...q("noteBlocks").querySelectorAll("textarea")].indexOf(ta);
+        if (idx>=0) {
+          noteBlocks.splice(idx+1,0,{type:"image",value:ev.target.result},{type:"text",value:""});
+        } else {
+          noteBlocks.push({type:"image",value:ev.target.result},{type:"text",value:""});
+        }
+        saveNote(); renderNoteBlocks();
+      };
+      r.readAsDataURL(it.getAsFile());
+      return;
+    }
+  }
+}
+</script>
+
+<script>
+// ── Pobieranie artykułu z linku ──────────────────────────────────────────
+// Pobiera pełny tekst artykułu z URL (omija reklamy/menu) i wstawia do formularza
+async function fetchFromLink() {
+  const url = q('fLink').value.trim();
+  if (!url) {
+    toast('Wpisz najpierw link w polu "Link główny"', false);
+    return;
+  }
+  await fetchFullArticleText(url, 'fetchStatus');
+}
+
+async function fetchFullArticleText(url, statusElId) {
+  let cleanUrl = url;
+  try {
+    const u = new URL(url);
+    ["fbclid","utm_source","utm_medium","utm_campaign","utm_content","utm_term",
+     "aem_id","ref","source"].forEach(p => u.searchParams.delete(p));
+    cleanUrl = u.toString();
+  } catch {}
+
+  const statusEl = statusElId ? document.getElementById(statusElId) : null;
+  const setStatus = (html) => { if (statusEl) statusEl.innerHTML = html; };
+
+  setStatus(`<span style="color:#818cf8;font-size:12px">⏳ Pobieram stronę…</span>`);
+
+  try {
+    let htmlText = await tryProxy(`https://api.allorigins.win/get?url=${encodeURIComponent(cleanUrl)}`, "allorigins");
+    if (!htmlText) htmlText = await tryProxy(`https://corsproxy.io/?${encodeURIComponent(cleanUrl)}`, "raw");
+    if (!htmlText) htmlText = await tryProxy(`https://thingproxy.freeboard.io/fetch/${cleanUrl}`, "raw");
+    if (!htmlText && cleanUrl.includes("/Mobile/")) {
+      htmlText = await tryProxy(`https://api.allorigins.win/get?url=${encodeURIComponent(cleanUrl.replace("/Mobile/","/"))}`, "allorigins");
+    }
+    if (!htmlText) throw new Error("Nie udało się pobrać strony. Skopiuj tekst ręcznie.");
+
+    const parsed = parseArticle(htmlText, cleanUrl);
+    if (!parsed.text || parsed.text.length < 30) {
+      throw new Error("Nie znaleziono tekstu artykułu na stronie.");
+    }
+
+    // Wstaw bezpośrednio do formularza dodawania artykułu
+    q('fTitle').value = parsed.title || "";
+    q('fLink').value   = cleanUrl;
+    q('fDate').value   = new Date().toISOString().slice(0,10);
+    q('editorBlocks').innerHTML = '';
+    addTextBlock();
+    const ta = q('editorBlocks').querySelector('textarea');
+    if (ta) ta.value = parsed.text;
+    checkLinkDuplicateLive();
+
+    setStatus(`<span class="s-ok">✓ Pobrano ${parsed.text.length} znaków</span>`);
+    goTab('articles');
+    q("addForm").scrollIntoView({behavior:"smooth", block:"start"});
+    toast('Tekst pobrany i wstawiony do formularza');
+    return true;
+  } catch(e) {
+    setStatus(`<span class="s-err">✗ ${e.message}</span>`);
+    toast(e.message, false);
+    return false;
+  }
+}
+
+async function tryProxy(apiUrl, type) {
+  try {
+    const res = await fetch(apiUrl, { signal: AbortSignal.timeout(14000) });
+    if (!res.ok) return null;
+    if (type === "allorigins") {
+      const data = await res.json();
+      const c = data.contents || "";
+      return c.length > 200 ? c : null;
+    } else {
+      const t = await res.text();
+      return t.length > 200 ? t : null;
+    }
+  } catch { return null; }
+}
+
+function parseArticle(html, url) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+
+  const title =
+    doc.querySelector('meta[property="og:title"]')?.content ||
+    doc.querySelector('h1')?.textContent?.trim() ||
+    doc.querySelector('title')?.textContent?.trim() || "";
+
+  const REMOVE = ['script','style','nav','header','footer','aside',
+    '.reklama','.reklamy','.advertisement','.ads','.ad','.cookie',
+    '.popup','.modal','.newsletter','.social','.share','.comment',
+    '.comments','#comments','.sidebar','.menu','.navigation',
+    '[class*="ad-"]','[class*="ads-"]','[id*="google"]',
+    '[class*="cookie"]','[class*="banner"]','[class*="promo"]',
+    'figure > figcaption',
+  ];
+  REMOVE.forEach(sel => {
+    try { doc.querySelectorAll(sel).forEach(el => el.remove()); } catch {}
+  });
+
+  const CONTENT_SELECTORS = [
+    'article', '[itemprop="articleBody"]', '.article-body', '.article-content',
+    '.article__body', '.article__content', '.entry-content', '.post-content',
+    '.content-body', '.story-body', '.story-content', '.main-content',
+    '#article-body', '#article-content', '.tresc', '.tekst', '.body-content',
+    'main article', 'main .content', '.news-body', '.news-content',
+    '[class*="article-text"]', '[class*="article-body"]',
+  ];
+
+  let contentEl = null;
+  for (const sel of CONTENT_SELECTORS) {
+    try {
+      const el = doc.querySelector(sel);
+      if (el && el.textContent.trim().length > 200) { contentEl = el; break; }
+    } catch {}
+  }
+
+  if (!contentEl) {
+    let best = null, bestLen = 0;
+    doc.querySelectorAll('div, section, main').forEach(el => {
+      const len = el.textContent.trim().length;
+      const children = el.children.length;
+      if (len > bestLen && len < 50000 && children > 2) {
+        bestLen = len; best = el;
+      }
+    });
+    contentEl = best || doc.body;
+  }
+
+  const paragraphs = [];
+  const els = contentEl.querySelectorAll('p, h2, h3, h4, li');
+
+  if (els.length > 0) {
+    els.forEach(el => {
+      const t = el.textContent.trim().replace(/\s+/g,' ');
+      if (t.length > 20) paragraphs.push(t);
+    });
+  } else {
+    paragraphs.push(contentEl.textContent.trim().replace(/\s+/g,' '));
+  }
+
+  const text = paragraphs.join('\n\n');
+  return { title: title.trim(), text: text.trim() };
+}
+
+
+// ── Generowanie DOCX w przeglądarce (bez bibliotek) ──────────────────────
+
+function strToU8(str) {
+  return new TextEncoder().encode(str);
+}
+
+function makeDocxBlob(paragrafy) {
+  // Buduj XML dokumentu
+  function escXml(s) {
+    return String(s||"")
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;").replace(/"/g,"&quot;")
+      .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g,"");
+  }
+
+  const obrazy = paragrafy.filter(p=>p.type==="image");
+
+  let imgRels = "";
+  obrazy.forEach(ob => {
+    imgRels += `<Relationship Id="rId${100+ob.idx}"
+      Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
+      Target="media/img${ob.idx}.${ob.mime}"/>\n`;
+  });
+
+  const relsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" Target="settings.xml"/>
+  ${imgRels}
+</Relationships>`;
+
+  let body = "";
+  paragrafy.forEach(p => {
+    if (p.type === "heading") {
+      body += `<w:p><w:pPr><w:pStyle w:val="Heading${p.level||1}"/></w:pPr>
+        <w:r><w:t xml:space="preserve">${escXml(p.text)}</w:t></w:r></w:p>\n`;
+    } else if (p.type === "text") {
+      if (!p.text || !p.text.trim()) {
+        body += "<w:p/>\n";
+      } else {
+        body += `<w:p><w:pPr><w:jc w:val="both"/></w:pPr>
+          <w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:sz w:val="22"/></w:rPr>
+          <w:t xml:space="preserve">${escXml(p.text)}</w:t></w:r></w:p>\n`;
+      }
+    } else if (p.type === "image") {
+      const cx = 5040000, cy = Math.round(cx * (p.ratio||0.75));
+      body += `<w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:drawing>
+        <wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing">
+          <wp:extent cx="${cx}" cy="${cy}"/>
+          <wp:docPr id="${p.idx}" name="Img${p.idx}"/>
+          <a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+            <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+              <pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">
+                <pic:nvPicPr><pic:cNvPr id="${p.idx}" name="Img${p.idx}"/><pic:cNvPicPr/></pic:nvPicPr>
+                <pic:blipFill>
+                  <a:blip r:embed="rId${100+p.idx}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/>
+                  <a:stretch><a:fillRect/></a:stretch>
+                </pic:blipFill>
+                <pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm>
+                  <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+                </pic:spPr>
+              </pic:pic>
+            </a:graphicData>
+          </a:graphic>
+        </wp:inline>
+      </w:drawing></w:r></w:p>\n`;
+    } else if (p.type === "pagebreak") {
+      body += `<w:p><w:r><w:br w:type="page"/></w:r></w:p>\n`;
+    }
+  });
+
+  const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+  xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+<w:body>${body}
+<w:sectPr>
+  <w:pgSz w:w="11906" w:h="16838"/>
+  <w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134"/>
+</w:sectPr>
+</w:body></w:document>`;
+
+  const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:style w:type="paragraph" w:styleId="Normal">
+    <w:name w:val="Normal"/>
+    <w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:sz w:val="22"/></w:rPr>
+  </w:style>
+  <w:style w:type="paragraph" w:styleId="Heading1">
+    <w:name w:val="heading 1"/><w:basedOn w:val="Normal"/>
+    <w:pPr><w:outlineLvl w:val="0"/></w:pPr>
+    <w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:b/><w:sz w:val="32"/></w:rPr>
+  </w:style>
+  <w:style w:type="paragraph" w:styleId="Heading2">
+    <w:name w:val="heading 2"/><w:basedOn w:val="Normal"/>
+    <w:pPr><w:outlineLvl w:val="1"/></w:pPr>
+    <w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:b/><w:sz w:val="26"/></w:rPr>
+  </w:style>
+</w:styles>`;
+
+  const settingsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:defaultTabStop w:val="708"/>
+</w:settings>`;
+
+  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml"  ContentType="application/xml"/>
+  <Default Extension="png"  ContentType="image/png"/>
+  <Default Extension="jpg"  ContentType="image/jpeg"/>
+  <Default Extension="jpeg" ContentType="image/jpeg"/>
+  <Default Extension="gif"  ContentType="image/gif"/>
+  <Default Extension="webp" ContentType="image/webp"/>
+  <Override PartName="/word/document.xml"
+    ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+  <Override PartName="/word/styles.xml"
+    ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
+  <Override PartName="/word/settings.xml"
+    ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>
+</Types>`;
+
+  const rootRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1"
+    Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument"
+    Target="word/document.xml"/>
+</Relationships>`;
+
+  // Buduj ZIP ręcznie
+  const files = [
+    { name:"[Content_Types].xml", data: strToU8(contentTypes) },
+    { name:"_rels/.rels",          data: strToU8(rootRels) },
+    { name:"word/document.xml",    data: strToU8(documentXml) },
+    { name:"word/styles.xml",      data: strToU8(stylesXml) },
+    { name:"word/settings.xml",    data: strToU8(settingsXml) },
+    { name:"word/_rels/document.xml.rels", data: strToU8(relsXml) },
+  ];
+
+  // Dodaj obrazy
+  obrazy.forEach(ob => {
+    files.push({ name: `word/media/img${ob.idx}.${ob.mime}`, data: ob.data });
+  });
+
+  return buildZip(files);
+}
+
+// Prosta implementacja ZIP bez kompresji (stored)
+function buildZip(files) {
+  const localHeaders = [];
+  const centralDir   = [];
+  let offset = 0;
+
+  function u16(n) { const b=new Uint8Array(2); new DataView(b.buffer).setUint16(0,n,true); return b; }
+  function u32(n) { const b=new Uint8Array(4); new DataView(b.buffer).setUint32(0,n,true); return b; }
+  function concat(...arrays) {
+    const len = arrays.reduce((s,a)=>s+a.length,0);
+    const out = new Uint8Array(len); let pos=0;
+    arrays.forEach(a=>{ out.set(a,pos); pos+=a.length; });
+    return out;
+  }
+  function crc32(data) {
+    let crc=0xFFFFFFFF;
+    const table=crc32.table||(crc32.table=(()=>{
+      const t=new Uint32Array(256);
+      for(let i=0;i<256;i++){let c=i;for(let j=0;j<8;j++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[i]=c;}
+      return t;
+    })());
+    for(let i=0;i<data.length;i++) crc=table[(crc^data[i])&0xFF]^(crc>>>8);
+    return (crc^0xFFFFFFFF)>>>0;
+  }
+
+  files.forEach(file => {
+    const nameBytes = strToU8(file.name);
+    const data      = file.data instanceof Uint8Array ? file.data : strToU8(file.data);
+    const crc       = crc32(data);
+    const localHdr  = concat(
+      new Uint8Array([0x50,0x4B,0x03,0x04]), // signature
+      u16(20), u16(0), u16(0),               // version, flags, method=stored
+      u16(0), u16(0),                        // mod time, mod date
+      u32(crc), u32(data.length), u32(data.length),
+      u16(nameBytes.length), u16(0),
+      nameBytes
+    );
+    localHeaders.push(concat(localHdr, data));
+
+    const centralHdr = concat(
+      new Uint8Array([0x50,0x4B,0x01,0x02]),
+      u16(20), u16(20), u16(0), u16(0),
+      u16(0), u16(0),
+      u32(crc), u32(data.length), u32(data.length),
+      u16(nameBytes.length), u16(0), u16(0), u16(0),
+      u16(0), u32(0), u32(offset),
+      nameBytes
+    );
+    centralDir.push(centralHdr);
+    offset += localHdr.length + data.length;
+  });
+
+  const cdSize   = centralDir.reduce((s,c)=>s+c.length,0);
+  const eocd = concat(
+    new Uint8Array([0x50,0x4B,0x05,0x06]),
+    u16(0), u16(0),
+    u16(files.length), u16(files.length),
+    u32(cdSize), u32(offset),
+    u16(0)
+  );
+
+  const all = concat(...localHeaders, ...centralDir, eocd);
+  return new Blob([all], { type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+}
+
+// Konwertuj bloki artykułu/notatnika na paragrafy
+function blocksToParagrafy(blocks, startIdx) {
+  const paragrafy = [];
+  let imgIdx = startIdx || 0;
+  (blocks||[]).forEach(b => {
+    if (b.type === "text") {
+      (b.value||"").split("\n").forEach(linia => {
+        paragrafy.push({ type:"text", text: linia });
+      });
+    } else if (b.type === "image" && b.value) {
+      imgIdx++;
+      try {
+        const [header, b64] = b.value.split(",");
+        const mime = header.includes("jpeg")||header.includes("jpg") ? "jpg"
+                   : header.includes("gif")  ? "gif"
+                   : header.includes("webp") ? "webp" : "png";
+        const binary = atob(b64);
+        const bytes  = new Uint8Array(binary.length);
+        for (let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+        // Spróbuj odczytać wymiary
+        let ratio = 0.75;
+        try {
+          if (mime==="png" && bytes[1]===0x50) {
+            const dv = new DataView(bytes.buffer);
+            const w  = dv.getUint32(16); const h = dv.getUint32(20);
+            if (w>0) ratio = h/w;
+          }
+        } catch {}
+        paragrafy.push({ type:"image", data:bytes, mime, idx:imgIdx, ratio });
+        paragrafy.push({ type:"text", text:"" });
+      } catch(e) {
+        paragrafy.push({ type:"text", text:`[Błąd obrazu: ${e.message}]` });
+      }
+    }
+  });
+  return paragrafy;
+}
+
+// Eksport ZAZNACZONYCH artykułów do jednego pliku Word
+function toggleExportHistory() {
+  const body = q("exportHistoryBody");
+  const btn  = q("exportHistoryToggle");
+  const open = body.style.display === "block";
+  body.style.display = open ? "none" : "block";
+  btn.textContent = open ? "▼ Rozwiń" : "▲ Zwiń";
+  if (!open) renderExportHistory();
+}
+
+// ── Historia eksportów do Word ───────────────────────────────────────────
+function getExportHistory() {
+  try { return JSON.parse(localStorage.getItem("export_history")||"[]"); }
+  catch { return []; }
+}
+
+function saveExportHistory(history) {
+  // Trzymaj max 20 ostatnich paczek, żeby nie rosło bez końca
+  const trimmed = history.slice(-20);
+  localStorage.setItem("export_history", JSON.stringify(trimmed));
+}
+
+function recordExportBatch(filename, articleIds, exportedAt) {
+  const history = getExportHistory();
+  history.push({
+    id: Date.now(),
+    filename,
+    articleIds,
+    exportedAt,
+    count: articleIds.length
+  });
+  saveExportHistory(history);
+  renderExportHistory();
+}
+
+function renderExportHistory() {
+  const el = q("exportHistoryList");
+  if (!el) return;
+  const history = getExportHistory().slice().reverse(); // najnowsze pierwsze
+
+  if (!history.length) {
+    el.innerHTML = `<div style="font-size:12px;color:#374151;padding:8px 0">Brak jeszcze żadnych eksportów.</div>`;
+    return;
+  }
+
+  el.innerHTML = history.map(batch => {
+    const dt = new Date(batch.exportedAt).toLocaleString("pl-PL");
+    // Sprawdź ile z tych artykułów wciąż istnieje i wciąż ma status wyeksportowany
+    const stillExported = batch.articleIds.filter(id => {
+      const a = articles.find(x=>x.id===id);
+      return a && a.wordExported;
+    }).length;
+    return `<div class="card" style="padding:11px 13px;margin-bottom:7px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:700;color:#e2e8f0;word-break:break-all">${esc(batch.filename)}</div>
+          <div style="font-size:11px;color:#4b5563;margin-top:2px">${dt} · ${batch.count} artykuł${batch.count>1?"y":""} · ${stillExported}/${batch.count} wciąż oznaczone</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button class="btn b-ghost b-sm" onclick="previewExportBatch(${batch.id})">👁 Podgląd</button>
+          <button class="btn b-red b-sm" onclick="undoExportBatch(${batch.id})">↩ Cofnij</button>
+        </div>
+      </div>
+      <div id="batchPreview${batch.id}" style="display:none;margin-top:8px"></div>
+    </div>`;
+  }).join("");
+}
+
+function previewExportBatch(batchId) {
+  const history = getExportHistory();
+  const batch = history.find(b => b.id === batchId);
+  if (!batch) return;
+
+  const el = q(`batchPreview${batchId}`);
+  const isOpen = el.style.display === "block";
+  if (isOpen) { el.style.display = "none"; return; }
+
+  const items = batch.articleIds.map(id => {
+    const a = articles.find(x=>x.id===id);
+    if (!a) return `<div style="font-size:12px;color:#374151">@${id}@ — artykuł usunięty z bazy</div>`;
+    return `<div style="font-size:12px;color:#94a3b8;padding:4px 0;border-top:1px solid #23233a">
+      <span class="badge" style="font-size:11px">@${a.id}@</span>
+      ${esc(a.title||"Bez tytułu")}
+      ${a.wordExported ? `<span style="color:#34d399">✓</span>` : `<span style="color:#f59e0b">🆕 (już cofnięte)</span>`}
+    </div>`;
+  }).join("");
+
+  el.innerHTML = `<div style="background:#1e1e2a;border-radius:7px;padding:8px 10px">${items}</div>`;
+  el.style.display = "block";
+}
+
+function undoExportBatch(batchId) {
+  const history = getExportHistory();
+  const batch = history.find(b => b.id === batchId);
+  if (!batch) return;
+
+  if (!confirm(`Cofnąć status "wyeksportowano" dla ${batch.count} artykuł(ów) z tej paczki? Plik .docx nie zostanie usunięty z dysku — to tylko oznaczy artykuły jako nowe w aplikacji.`)) return;
+
+  let restored = 0;
+  batch.articleIds.forEach(id => {
+    const a = articles.find(x=>x.id===id);
+    if (a && a.wordExported) {
+      a.wordExported = false;
+      delete a.wordExportedAt;
+      restored++;
+    }
+  });
+
+  saveArticles();
+  renderArts();
+  renderExportHistory();
+  toast(`Cofnięto status dla ${restored} artykułów — oznaczone jako nowe`);
+}
+
+function clearExportHistory() {
+  if (!confirm("Usunąć całą historię eksportów? To nie wpłynie na status artykułów, tylko wyczyści listę poniżej.")) return;
+  localStorage.removeItem("export_history");
+  renderExportHistory();
+  toast("Historia eksportów wyczyszczona");
+}
+
+async function exportSelectedToWord() {
+  const ids = [...selectedForExport];
+  if (!ids.length) { toast("Nie zaznaczono żadnych artykułów", false); return; }
+
+  const selArts = articles.filter(a => ids.includes(a.id))
+    .sort((a,b) => (a.date||"").localeCompare(b.date||"") || a.id-b.id);
+
+  const bar = q("exportBar");
+  const oldHtml = bar.innerHTML;
+  bar.innerHTML = `<span style="font-size:13px;color:#94a3b8">⏳ Generuję plik Word z ${selArts.length} artykułów…</span>`;
+
+  // Zablokuj auto-zapis na czas eksportu — zapobiega kolizji dwóch pobrań naraz
+  const wasAutoSaveEnabled = autoSaveEnabled;
+  clearTimeout(autoSaveTimer);
+  autoSaveEnabled = false;
+
+  try {
+    const paragrafy = [];
+    paragrafy.push({ type:"heading", text:`Zestaw artykułów (${selArts.length})`, level:1 });
+    paragrafy.push({ type:"text", text:`Wygenerowano: ${new Date().toLocaleString("pl-PL")}` });
+    paragrafy.push({ type:"text", text:"" });
+    paragrafy.push({ type:"pagebreak" });
+
+    let runningImgIdx = 0; // globalny licznik obrazów - każdy obraz w całym dokumencie musi mieć unikalny idx
+    selArts.forEach((art, i) => {
+      paragrafy.push({ type:"heading", text:`@${art.id}@  ${art.title||""}`, level:1 });
+      if (art.date) paragrafy.push({ type:"text", text:`Data: ${art.date}` });
+      if (art.link) paragrafy.push({ type:"text", text:`Link: ${art.link}` });
+      if (art.extraLinks && art.extraLinks.length) {
+        art.extraLinks.forEach((l,li) => paragrafy.push({ type:"text", text:`Link dodatkowy ${li+1}: ${l}` }));
+      }
+      paragrafy.push({ type:"text", text:"" });
+      const blockParas = blocksToParagrafy(art.blocks||[], runningImgIdx);
+      runningImgIdx += blockParas.filter(p => p.type === "image").length;
+      paragrafy.push(...blockParas);
+      if (i < selArts.length-1) paragrafy.push({ type:"pagebreak" });
+    });
+
+    const blob = makeDocxBlob(paragrafy);
+    const fname = `doktorat_zestaw_${selArts.length}art_${new Date().toISOString().slice(0,10)}.docx`;
+    dlBlob2(blob, fname);
+
+    // Poczekaj aż pobranie .docx realnie wystartuje, zanim cokolwiek innego dotknie pamięci
+    await new Promise(r => setTimeout(r, 600));
+
+    // Oznacz artykuły jako wyeksportowane do Word
+    const exportedAt = new Date().toISOString();
+    selArts.forEach(art => {
+      const ref = articles.find(a => a.id === art.id);
+      if (ref) { ref.wordExported = true; ref.wordExportedAt = exportedAt; }
+    });
+
+    // Zapisz paczkę w historii eksportów (do podglądu i ewentualnego cofnięcia)
+    recordExportBatch(fname, selArts.map(a=>a.id), exportedAt);
+
+    await idbSet("articles", articles); // zapis lokalny BEZ triggera auto-save
+    updateStorageIndicator();
+    selectedForExport.clear();
+    renderArts();
+
+    toast(`Pobrano plik Word z ${selArts.length} artykułami!`);
+
+    // Jeśli auto-zapis był włączony, zaplanuj go teraz — osobno, po zakończeniu eksportu Word
+    if (wasAutoSaveEnabled) {
+      setTimeout(() => { autoSaveEnabled = true; scheduleAutoSave(); }, 800);
+    }
+  } catch(e) {
+    toast("Błąd eksportu: "+e.message, false);
+    autoSaveEnabled = wasAutoSaveEnabled;
+  }
+
+  bar.innerHTML = oldHtml;
+  updateExportBar();
+}
+
+// Eksport notatnika do Word
+async function exportNotepadWord() {
+  const btn = document.getElementById("noteWordBtn");
+  if (btn) { btn.textContent="⏳ Generuję…"; btn.disabled=true; }
+
+  try {
+    syncNoteBlocksFromDOM();
+    const paragrafy = [];
+    paragrafy.push({ type:"heading", text:"Notatnik", level:1 });
+    paragrafy.push({ type:"text", text:"" });
+    paragrafy.push(...blocksToParagrafy(noteBlocks));
+
+    const blob = makeDocxBlob(paragrafy);
+    dlBlob2(blob, "doktorat_notatnik.docx");
+    toast("Plik Word pobrany!");
+  } catch(e) {
+    toast("Błąd eksportu: "+e.message, false);
+  }
+
+  if (btn) { btn.textContent="📄 Eksportuj do Word"; btn.disabled=false; }
+}
+
+
+
+function dlBlob2(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a   = document.createElement("a");
+  a.href=url; a.download=name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 3000);
+}
+
+// ── Ostrzeżenie przed zamknięciem ────────────────────────────────────────
+let unsavedChanges = false;
+
+function markUnsaved() { unsavedChanges = true; }
+function markSaved()   { unsavedChanges = false; }
+
+// Nadpisz saveArticles i saveNote żeby śledzić niezapisane zmiany
+const _origSaveArticles = saveArticles;
+saveArticles = function() { _origSaveArticles(); markUnsaved(); };
+const _origSaveNote = saveNote;
+saveNote = function() { _origSaveNote(); markUnsaved(); };
+
+// Przy eksporcie JSON - oznacz jako zapisane
+const _origExportArticles = exportArticles;
+exportArticles = function() { _origExportArticles(); markSaved(); };
+const _origExportNotepad = exportNotepad;
+exportNotepad = function() { _origExportNotepad(); markSaved(); };
+
+window.addEventListener("beforeunload", e => {
+  if (unsavedChanges) {
+    const msg = "Masz niezapisane zmiany w bazie! Pobierz plik JSON przed zamknięciem.";
+    e.preventDefault();
+    e.returnValue = msg;
+    return msg;
+  }
+});
+</script>
+</body>
+</html>

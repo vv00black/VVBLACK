@@ -1,0 +1,8 @@
+/sw.js
+  Cache-Control: max-age=0, no-cache, no-store, must-revalidate
+
+/index.html
+  Cache-Control: max-age=0, no-cache, no-store, must-revalidate
+
+/manifest.json
+  Cache-Control: max-age=0, no-cache, no-store, must-revalidate
